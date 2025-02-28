@@ -1,0 +1,170 @@
+﻿@page "/"
+@using UsersRolesBlazor.ApiRequest
+@using UsersRolesBlazor.ApiRequest.Model
+@using UsersRolesBlazor.ApiRequest.Services
+@rendermode InteractiveServer
+@inject ApiRequestService ApiRequest
+@inject NavigationManager NM
+@inject UserStateService UserState
+
+<div class="header">
+    <h3 class="title">UserHub</h3>
+    <div class="button-group">
+        <button class="btn btn-primary" @onclick="ShowLoginForm">Sign in</button>
+        <button class="btn btn-secondary" @onclick="ShowRegisterForm">Sign up</button>
+    </div>
+</div>
+
+@if (showLogin)
+{
+    <div class="form-container">
+        <h4>Sign in to UserHub</h4>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="@(isError ? "alert alert-danger" : "alert alert-success")">
+                @errorMessage
+            </div>
+        }
+        <div>
+            <label for="loginEmail">Email:</label>
+            <input type="text" id="loginEmail" @bind="loginEmail" />
+        </div>
+        <div>
+            <label for="loginPassword">Password:</label>
+            <input type="password" id="loginPassword" @bind="loginPassword" />
+        </div>
+        <div class="button-center">
+            <button class="btn btn-primary" @onclick="Auth">Sign in</button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="form-container">
+        <h4>Sign up to UserHub</h4>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="@(isError ? "alert alert-danger" : "alert alert-success")">
+                @errorMessage
+            </div>
+        }
+
+        <EditForm Model="@reqDataUser" OnValidSubmit="@UserAddData">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div>
+                <label for="registerEmail">Email:</label>
+                <InputText @bind-Value="reqDataUser.email" id="registerEmail" class="form-control" />
+                <ValidationMessage For="@(() => reqDataUser.email)" />
+            </div>
+
+            <div>
+                <label for="confirmName">Name:</label>
+                <InputText @bind-Value="reqDataUser.name" id="confirmName" class="form-control" />
+                <ValidationMessage For="@(() => reqDataUser.name)" />
+            </div>
+
+            <div>
+                <label for="confirmDescription">Description:</label>
+                <InputText @bind-Value="reqDataUser.description" id="confirmDescription" class="form-control" />
+                <ValidationMessage For="@(() => reqDataUser.description)" />
+            </div>
+
+            <div>
+                <label for="registerPassword">Password:</label>
+                <InputText type="password" @bind-Value="reqDataUser.password" id="registerPassword" class="form-control" />
+                <ValidationMessage For="@(() => reqDataUser.password)" />
+            </div>
+
+            <div>
+                <label for="confirmPassword">Confirm Password:</label>
+                <InputText type="password" @bind-Value="confirmPassword" id="confirmPassword" class="form-control" />
+            </div>
+
+            <div class="pt-1 mb-4 button-center">
+                <button type="submit" class="btn btn-primary">Sign up</button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@code {
+    private bool showLogin = true;
+    private string loginEmail;
+    private string loginPassword;
+    private string confirmPassword;
+    private string errorMessage;
+    private bool isError;
+
+    private ReqDataUser reqDataUser = new ReqDataUser();
+
+    private void ShowLoginForm()
+    {
+        showLogin = true;
+        errorMessage = null;
+    }
+
+    private void ShowRegisterForm()
+    {
+        showLogin = false;
+        errorMessage = null;
+    }
+
+    private async Task Auth()
+    {
+        errorMessage = null;
+        isError = false;
+
+        var authResult = await ApiRequest.LoginAsync(loginEmail, loginPassword);
+
+        if (authResult != null)
+        {
+            UserState.SetUser(authResult.roleName, authResult.email, authResult.name, authResult.description);
+            NM.NavigateTo("counter");
+        }
+        else
+        {
+            errorMessage = "Ошибка входа: неверный email или пароль";
+            isError = true;
+        }
+    }
+
+    private async Task UserAddData()
+    {
+        errorMessage = null;
+        isError = false;
+
+        var isLoginUnique = await ApiRequest.CheckLoginUniqueAsync(reqDataUser.email);
+        if (!isLoginUnique)
+        {
+            errorMessage = "Логин уже занят";
+            isError = true;
+            return;
+        }
+
+        if (reqDataUser.password != confirmPassword)
+        {
+            errorMessage = "Пароли не совпадают";
+            isError = true;
+            return;
+        }
+
+        var result = await ApiRequest.AddNewUser(reqDataUser);
+
+        if (result != null && result.status)
+        {
+            errorMessage = "Пользователь успешно зарегистрирован";
+            isError = false;
+            reqDataUser = new ReqDataUser();
+            confirmPassword = string.Empty;
+            await Task.Delay(2000);
+            NM.NavigateTo("/counter");
+        }
+        else
+        {
+            errorMessage = "Ошибка при регистрации пользователя";
+            isError = true;
+        }
+    }
+}

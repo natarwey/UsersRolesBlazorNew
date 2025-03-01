@@ -5,118 +5,116 @@
 @using UsersRolesBlazor.Components.Pages
 @rendermode InteractiveServer
 @inject NavigationManager NM
+@inject UserStateService UserState
 
-@if (!UserState.IsAuthenticated)
+@* @if (!UserState.IsAuthenticated)
 {
     <p>Вы не авторизованы. Пожалуйста, <a href="/">войдите</a>.</p>
-}
-else
-{
-    <PageTitle>Users list</PageTitle>
+} *@
+@* else
+{ *@
+<PageTitle>Users list</PageTitle>
 
-    <h1>List of users</h1>
+<h1>List of users</h1>
 
-    <p class="text-center fw-bold mb-5 mx-1 mx-md-4 mt-4">
-        <table class="table table-bordered">
-            <thead class="alert-dark">
+<p class="text-center fw-bold mb-5 mx-1 mx-md-4 mt-4">
+    <table class="table table-bordered">
+        <thead class="alert-dark">
+            <tr>
+                <th>id_User</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (users == null)
+            {
                 <tr>
-                    <th>id_User</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Actions</th>
+                    <td colspan="4" class="text-center">Loading...</td>
                 </tr>
-            </thead>
-            <tbody>
-                @if (users == null)
+            }
+            else if (!users.Any())
+            {
+                <tr>
+                    <td colspan="4" class="text-center">No users found</td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var user in users)
                 {
                     <tr>
-                        <td colspan="4" class="text-center">Loading...</td>
+                        <td>@user.id_User</td>
+                        <td>@user.name</td>
+                        <td>@user.description</td>
+                        <td>
+                            <button class="btn btn-warning" @onclick="() => StartEdit(user.id_User)">Edit</button>
+                            <button class="btn btn-danger" @onclick="() => DeleteUser(user.id_User)">Delete</button>
+                        </td>
                     </tr>
                 }
-                else if (!users.Any())
-                {
-                    <tr>
-                        <td colspan="4" class="text-center">No users found</td>
-                    </tr>
-                }
-                else
-                {
-                    @foreach (var user in users)
-                    {
-                        <tr>
-                            <td>@user.id_User</td>
-                            <td>@user.name</td>
-                            <td>@user.description</td>
-                            <td>
-                                <button class="btn btn-warning" @onclick="() => StartEdit(user.id_User)">Edit</button>
-                                <button class="btn btn-danger" @onclick="() => DeleteUser(user.id_User)">Delete</button>
-                            </td>
-                        </tr>
-                    }
-                }
-            </tbody>
-        </table>
-    </p>
+            }
+        </tbody>
+    </table>
+</p>
 
-    @if (isEditing)
-    {
-        <h1>Editing a user</h1>
-
-        <div class="d-flex align-items-center h-custom-2 px-5 ms-xl-4 mt-5 pt-5 pt-xl-0 mt-xl-n5">
-            <form style="width: 23rem;">
-                <div class="form-outline mb-4">
-                    <label class="form-label" for="editName">Name</label>
-                    <input type="text" @bind="@editName" id="editName" class="form-control form-control-lg" />
-                </div>
-                <div class="form-outline mb-4">
-                    <label class="form-label" for="editDescription">Description</label>
-                    <input type="text" @bind="@editDescription" id="editDescription" class="form-control form-control-lg" />
-                </div>
-                <div class="pt-1 mb-4">
-                    <button class="btn btn-warning btn-lg btn-block" @onclick="SaveChanges" type="button">Save Changes</button>
-                    <button class="btn btn-secondary btn-lg btn-block" @onclick="CancelEdit" type="button">Cancel</button>
-                </div>
-            </form>
-        </div>
-    }
-
-    <h1>Adding a new user</h1>
+@if (isEditing)
+{
+    <h1>Editing a user</h1>
 
     <div class="d-flex align-items-center h-custom-2 px-5 ms-xl-4 mt-5 pt-5 pt-xl-0 mt-xl-n5">
         <form style="width: 23rem;">
             <div class="form-outline mb-4">
-                <label class="form-label" for="form2Example28">Login</label>
-                <input type="text" @bind="@reqDataUser.email" id="form2Example28" class="form-control form-control-lg" />
+                <label class="form-label" for="editName">Name</label>
+                <input type="text" @bind="@editName" id="editName" class="form-control form-control-lg" />
             </div>
             <div class="form-outline mb-4">
-                <label class="form-label" for="form2Example28">Password</label>
-                <input type="password" @bind="@reqDataUser.password" id="form2Example28" class="form-control form-control-lg" />
-            </div>
-            <div class="form-outline mb-4">
-                <label class="form-label" for="form2Example28">Name</label>
-                <input type="text" @bind="@reqDataUser.name" id="form2Example28" class="form-control form-control-lg" />
-            </div>
-            <div class="form-outline mb-4">
-                <label class="form-label" for="form2Example28">Description</label>
-                <input type="text" @bind="@reqDataUser.description" id="form2Example28" class="form-control form-control-lg" />
+                <label class="form-label" for="editDescription">Description</label>
+                <input type="text" @bind="@editDescription" id="editDescription" class="form-control form-control-lg" />
             </div>
             <div class="pt-1 mb-4">
-                <button class="btn btn-warning btn-lg btn-block" @onclick="AddNewUser" type="button">Add</button>
+                <button class="btn btn-warning btn-lg btn-block" @onclick="SaveChanges" type="button">Save Changes</button>
+                <button class="btn btn-secondary btn-lg btn-block" @onclick="CancelEdit" type="button">Cancel</button>
             </div>
         </form>
     </div>
 }
 
+<h1>Adding a new user</h1>
+
+<div class="d-flex align-items-center h-custom-2 px-5 ms-xl-4 mt-5 pt-5 pt-xl-0 mt-xl-n5">
+    <form style="width: 23rem;">
+        <div class="form-outline mb-4">
+            <label class="form-label" for="form2Example28">Login</label>
+            <input type="text" @bind="@reqDataUser.email" id="form2Example28" class="form-control form-control-lg" />
+        </div>
+        <div class="form-outline mb-4">
+            <label class="form-label" for="form2Example28">Password</label>
+            <input type="password" @bind="@reqDataUser.password" id="form2Example28" class="form-control form-control-lg" />
+        </div>
+        <div class="form-outline mb-4">
+            <label class="form-label" for="form2Example28">Name</label>
+            <input type="text" @bind="@reqDataUser.name" id="form2Example28" class="form-control form-control-lg" />
+        </div>
+        <div class="form-outline mb-4">
+            <label class="form-label" for="form2Example28">Description</label>
+            <input type="text" @bind="@reqDataUser.description" id="form2Example28" class="form-control form-control-lg" />
+        </div>
+        <div class="pt-1 mb-4">
+            <button class="btn btn-warning btn-lg btn-block" @onclick="AddNewUser" type="button">Add</button>
+        </div>
+    </form>
+</div>
+@* } *@
+
 @code {
-
-
-
     private List<UserDataShort> users;
     private ReqDataUser reqDataUser = new ReqDataUser();
 
     // Поля для редактирования
 
-    private UserStateService UserState;
+    //private UserStateService UserState;
     private bool isEditing = false;
     private int editingUserId;
     private string editName;
@@ -126,13 +124,16 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        if (UserState.IsAuthenticated)
-        {
-            NM.NavigateTo("/");
-            return;
-        }
+        // if (UserState.IsAuthenticated)
+        // {
+        // NM.NavigateTo("/");
+        // return;
 
         await getAllUsers();
+
+        //}
+
+        // await getAllUsers();
     }
 
     private async Task getAllUsers()
